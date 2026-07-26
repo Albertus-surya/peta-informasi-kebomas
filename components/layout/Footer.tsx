@@ -6,7 +6,7 @@ export default function Footer() {
       <div className="flex items-center gap-2">
         {/* Logo sementara — ganti /public/images/logo-placeholder.svg dengan logo resmi */}
         <Image
-          src="/images/kebomas.jpg"
+          src="/images/icon.png"
           alt="Logo Kecamatan Kebomas"
           width={24}
           height={24}
