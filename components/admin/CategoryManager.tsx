@@ -69,8 +69,8 @@ export default function CategoryManager({
   const onSubmit = async (values: CategoryFormValues) => {
     const supabase = createClient();
     const query = editing
-      ? supabase.from("categories").update(values as any).eq("id", editing.id)
-      : supabase.from("categories").insert(values as any);
+      ? (supabase.from("categories") as any).update(values).eq("id", editing.id)
+      : (supabase.from("categories") as any).insert(values);
 
     const { error } = await query;
     if (error) {
