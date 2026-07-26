@@ -81,8 +81,8 @@ export default function AdminDashboardPage() {
     };
 
     const query = editingLocation
-      ? supabase.from("locations").update(payload).eq("id", editingLocation.id)
-      : supabase.from("locations").insert(payload);
+      ? supabase.from("locations").update(payload as any).eq("id", editingLocation.id)
+      : supabase.from("locations").insert(payload as any);
 
     const { error } = await query;
     if (error) {
