@@ -49,28 +49,33 @@ export default function CategoryManager({
     formState: { errors, isSubmitting },
   } = useForm<CategoryFormValues>({
     resolver: zodResolver(categorySchema),
-    defaultValues: { name: "", icon: "MapPin" },
+    defaultValues: { name: "", icon: "MapPin", color: "#f97316" },
   });
 
   const selectedIcon = watch("icon");
+  const selectedColor = watch("color");
 
   const openCreate = () => {
     setEditing(null);
-    reset({ name: "", icon: "MapPin" });
+    reset({ name: "", icon: "MapPin", color: "#f97316" });
     setShowForm(true);
   };
 
   const openEdit = (category: Category) => {
     setEditing(category);
-    reset({ name: category.name, icon: category.icon });
+    reset({
+      name: category.name,
+      icon: category.icon,
+      color: category.color ?? "#f97316",
+    });
     setShowForm(true);
   };
 
   const onSubmit = async (values: CategoryFormValues) => {
     const supabase = createClient();
     const query = editing
-      ? (supabase.from("categories") as any).update(values).eq("id", editing.id)
-      : (supabase.from("categories") as any).insert(values);
+      ? supabase.from("categories").update(values).eq("id", editing.id)
+      : supabase.from("categories").insert(values);
 
     const { error } = await query;
     if (error) {
@@ -125,7 +130,12 @@ export default function CategoryManager({
           return (
             <li key={c.id} className="flex items-center justify-between py-2">
               <span className="flex items-center gap-2 text-sm text-ink-900">
-                <CategoryIcon size={15} className="text-brand-orange" />
+                <span
+                  aria-hidden
+                  className="h-3 w-3 shrink-0 rounded-full border border-ink-300"
+                  style={{ backgroundColor: c.color ?? "#f97316" }}
+                />
+                <CategoryIcon size={15} style={{ color: c.color ?? "#f97316" }} />
                 {c.name}
               </span>
               <span className="flex gap-1">
@@ -227,6 +237,29 @@ export default function CategoryManager({
               </div>
               {errors.icon && (
                 <p className="mt-1 text-xs text-red-600">{errors.icon.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-ink-700">
+                Warna Titik
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  {...register("color")}
+                  className="h-10 w-14 cursor-pointer rounded-lg border border-ink-300 bg-white p-1"
+                  aria-label="Pilih warna titik"
+                />
+                <input
+                  type="text"
+                  {...register("color")}
+                  placeholder="#f97316"
+                  className="w-full rounded-lg border border-ink-300 px-3 py-2 text-sm uppercase outline-none focus:border-brand-blue"
+                />
+              </div>
+              {errors.color && (
+                <p className="mt-1 text-xs text-red-600">{errors.color.message}</p>
               )}
             </div>
 

@@ -17,21 +17,23 @@ export interface Database {
           id: string;
           name: string;
           icon: string;
+          color: string;
           created_at: string;
         };
         Insert: {
           id?: string;
           name: string;
           icon: string;
+          color?: string;
           created_at?: string;
         };
         Update: {
           id?: string;
           name?: string;
           icon?: string;
+          color?: string;
           created_at?: string;
         };
-        Relationships: [];
       };
       locations: {
         Row: {
@@ -70,21 +72,8 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
-        Relationships: [
-          {
-            foreignKeyName: "locations_category_id_fkey";
-            columns: ["category_id"];
-            isOneToOne: false;
-            referencedRelation: "categories";
-            referencedColumns: ["id"];
-          }
-        ];
       };
     };
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
-    Enums: Record<string, never>;
-    CompositeTypes: Record<string, never>;
   };
 }
 
@@ -92,5 +81,5 @@ export type Category = Database["public"]["Tables"]["categories"]["Row"];
 export type Location = Database["public"]["Tables"]["locations"]["Row"];
 
 export type LocationWithCategory = Location & {
-  categories: Pick<Category, "id" | "name" | "icon"> | null;
+  categories: Pick<Category, "id" | "name" | "icon" | "color"> | null;
 };

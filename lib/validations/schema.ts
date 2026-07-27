@@ -13,6 +13,9 @@ export const KEBOMAS_BOUNDS = {
 export const categorySchema = z.object({
   name: z.string().min(2, "Nama kategori minimal 2 karakter").max(50),
   icon: z.string().min(1, "Pilih salah satu ikon"),
+  color: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/, "Format warna harus hex, contoh: #f97316"),
 });
 
 export type CategoryFormValues = z.infer<typeof categorySchema>;

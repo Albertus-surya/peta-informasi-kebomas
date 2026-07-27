@@ -38,7 +38,7 @@ export default function AdminDashboardPage() {
       supabase.from("categories").select("*").order("created_at"),
       supabase
         .from("locations")
-        .select("*, categories(id, name, icon)")
+        .select("*, categories(id, name, icon, color)")
         .order("created_at", { ascending: false }),
     ]);
 
@@ -81,8 +81,8 @@ export default function AdminDashboardPage() {
     };
 
     const query = editingLocation
-      ? (supabase.from("locations") as any).update(payload).eq("id", editingLocation.id)
-      : (supabase.from("locations") as any).insert(payload);
+      ? supabase.from("locations").update(payload).eq("id", editingLocation.id)
+      : supabase.from("locations").insert(payload);
 
     const { error } = await query;
     if (error) {

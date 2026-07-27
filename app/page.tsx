@@ -43,7 +43,7 @@ export default function HomePage() {
             supabase.from("categories").select("*").order("created_at"),
             supabase
               .from("locations")
-              .select("*, categories(id, name, icon)")
+              .select("*, categories(id, name, icon, color)")
               .order("created_at"),
             fetch("/geojson/kebomas-boundary.min.geojson").then((r) =>
               r.ok ? r.json() : fetch("/geojson/kebomas-boundary.geojson").then((r2) => r2.json())

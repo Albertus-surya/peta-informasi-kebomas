@@ -14,7 +14,7 @@ import type { LocationWithCategory } from "@/types/database";
 
 const CLUSTER_THRESHOLD = 50;
 
-function buildDivIcon(iconName: string, active: boolean) {
+function buildDivIcon(iconName: string, active: boolean, color: string) {
   const LucideIcon =
     (Icons as unknown as Record<string, React.ComponentType<any>>)[
       iconName
@@ -29,7 +29,7 @@ function buildDivIcon(iconName: string, active: boolean) {
         width: active ? 36 : 30,
         height: active ? 36 : 30,
         borderRadius: "9999px",
-        background: active ? "#2563eb" : "#f97316",
+        background: active ? "#2563eb" : color,
         border: "2px solid white",
         boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
         transition: "all 0.15s ease",
@@ -55,13 +55,17 @@ interface MarkerLayerProps {
 export default function MarkerLayer({ locations }: MarkerLayerProps) {
   const map = useMap();
   const selectedLocation = useMapStore((s) => s.selectedLocation);
-  const setSelectedLocation = useMapStore((s) => s.setSelectedLocation);
+  const flyToLocation = useMapStore((s) => s.flyToLocation);
 
   const markers = useMemo(
     () =>
       locations.map((loc) => {
         const isActive = selectedLocation?.id === loc.id;
-        const icon = buildDivIcon(loc.categories?.icon ?? "MapPin", isActive);
+        const icon = buildDivIcon(
+          loc.categories?.icon ?? "MapPin",
+          isActive,
+          loc.categories?.color ?? "#f97316"
+        );
 
         return (
           <Marker
@@ -69,7 +73,7 @@ export default function MarkerLayer({ locations }: MarkerLayerProps) {
             position={[loc.latitude, loc.longitude]}
             icon={icon}
             eventHandlers={{
-              click: () => setSelectedLocation(loc),
+              click: () => flyToLocation(loc),
             }}
           >
             <Popup>
@@ -123,7 +127,7 @@ export default function MarkerLayer({ locations }: MarkerLayerProps) {
           </Marker>
         );
       }),
-    [locations, selectedLocation, setSelectedLocation]
+    [locations, selectedLocation, flyToLocation]
   );
 
   if (locations.length > CLUSTER_THRESHOLD) {

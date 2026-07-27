@@ -61,7 +61,15 @@ export default function CategoryAccordion({
               className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left text-sm font-medium text-ink-900 hover:bg-ink-100"
             >
               <span className="flex items-center gap-2">
-                <CategoryIcon size={16} className="text-brand-orange" />
+                <span
+                  aria-hidden
+                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: category.color ?? "#f97316" }}
+                />
+                <CategoryIcon
+                  size={16}
+                  style={{ color: category.color ?? "#f97316" }}
+                />
                 {category.name}
                 <span className="text-xs font-normal text-ink-500">
                   ({items.length})
