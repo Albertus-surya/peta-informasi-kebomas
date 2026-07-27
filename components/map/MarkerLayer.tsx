@@ -29,9 +29,11 @@ function buildDivIcon(iconName: string, active: boolean, color: string) {
         width: active ? 36 : 30,
         height: active ? 36 : 30,
         borderRadius: "9999px",
-        background: active ? "#2563eb" : color,
-        border: "2px solid white",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+        background: color,
+        border: active ? "3px solid #2563eb" : "2px solid white",
+        boxShadow: active
+          ? "0 0 0 2px white, 0 2px 8px rgba(0,0,0,0.3)"
+          : "0 2px 8px rgba(0,0,0,0.3)",
         transition: "all 0.15s ease",
       }}
     >
