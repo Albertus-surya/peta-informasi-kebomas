@@ -1,8 +1,16 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { MapContainer, TileLayer, ZoomControl, useMap } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  ZoomControl,
+  Marker,
+  Tooltip,
+  useMap,
+} from "react-leaflet";
 import L from "leaflet";
+import * as turf from "@turf/turf";
 import { LocateFixed } from "lucide-react";
 import toast from "react-hot-toast";
 import BoundaryLayer from "./BoundaryLayer";
@@ -50,7 +58,13 @@ function FlyToController() {
   return null;
 }
 
-function GeolocateButton() {
+function GeolocateButton({
+  boundaryData,
+  onLocate,
+}: {
+  boundaryData: FeatureCollection;
+  onLocate: (position: [number, number]) => void;
+}) {
   const map = useMap();
 
   const handleLocate = useCallback(() => {
@@ -60,14 +74,28 @@ function GeolocateButton() {
     }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        map.flyTo([pos.coords.latitude, pos.coords.longitude], 17, {
-          animate: true,
+        const { latitude, longitude } = pos.coords;
+        const point = turf.point([longitude, latitude]);
+        const isInsideKebomas = boundaryData.features.some((feature) => {
+          try {
+            return turf.booleanPointInPolygon(point, feature as any);
+          } catch {
+            return false;
+          }
         });
+
+        if (!isInsideKebomas) {
+          toast.error("Lokasi Anda berada di luar kawasan Kebomas");
+          return;
+        }
+
+        onLocate([latitude, longitude]);
+        map.flyTo([latitude, longitude], 17, { animate: true });
       },
       () => toast.error("Tidak bisa mengakses lokasi Anda"),
       { enableHighAccuracy: true, timeout: 8000 }
     );
-  }, [map]);
+  }, [map, boundaryData, onLocate]);
 
   return (
     <button
@@ -79,6 +107,29 @@ function GeolocateButton() {
       <LocateFixed size={18} className="text-brand-blue" />
       Lokasi
     </button>
+  );
+}
+
+function UserLocationMarker({
+  position,
+}: {
+  position: [number, number] | null;
+}) {
+  if (!position) return null;
+
+  const icon = L.divIcon({
+    className: "kd-user-location-icon",
+    html: `<div style="width:16px;height:16px;border-radius:9999px;background:#2563eb;border:3px solid white;box-shadow:0 0 0 4px rgba(37,99,235,0.35),0 2px 8px rgba(0,0,0,0.35);"></div>`,
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+  });
+
+  return (
+    <Marker position={position} icon={icon} interactive={false} zIndexOffset={900}>
+      <Tooltip permanent direction="top" offset={[0, -10]} className="kd-tooltip">
+        Lokasi Anda
+      </Tooltip>
+    </Marker>
   );
 }
 
@@ -94,6 +145,9 @@ export default function MapView({
   locations,
 }: MapViewProps) {
   const [bbox, setBbox] = useState<[number, number, number, number] | null>(
+    null
+  );
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(
     null
   );
 
@@ -122,10 +176,11 @@ export default function MapView({
         />
         <HighlightLayer data={highlightData} />
         <MarkerLayer locations={locations} />
+        <UserLocationMarker position={userLocation} />
         <MaxBoundsController bbox={bbox} />
         <FlyToController />
         <ZoomControl position="topright" />
-        <GeolocateButton />
+        <GeolocateButton boundaryData={boundaryData} onLocate={setUserLocation} />
       </MapContainer>
     </div>
   );

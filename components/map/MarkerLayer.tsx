@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Marker, Popup, useMap } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-markercluster";
@@ -58,6 +58,40 @@ export default function MarkerLayer({ locations }: MarkerLayerProps) {
   const map = useMap();
   const selectedLocation = useMapStore((s) => s.selectedLocation);
   const flyToLocation = useMapStore((s) => s.flyToLocation);
+  const markerRefs = useRef<Map<string, L.Marker>>(new Map());
+  const popupRefs = useRef<Map<string, L.Popup>>(new Map());
+
+  // Saat lokasi dipilih dari sidebar/pencarian ATAU klik langsung di titik,
+  // peta akan flyTo ke lokasi tsb dengan animasi berdurasi 1.1 detik
+  // (lihat FlyToController di MapView.tsx). Popup HARUS dibuka setelah
+  // animasi itu benar-benar selesai (event "moveend"), bukan lewat delay
+  // tebakan yang lebih pendek dari 1.1 detik — kalau dibuka lebih awal,
+  // Leaflet menghitung auto-pan berdasarkan posisi kamera yang belum final,
+  // sehingga begitu animasi kelar, card popup sudah bergeser dan jadi
+  // kepotong tepi kontainer peta.
+  useEffect(() => {
+    if (!selectedLocation) return;
+    const marker = markerRefs.current.get(selectedLocation.id);
+    if (!marker) return;
+
+    let opened = false;
+    const openOnce = () => {
+      if (opened) return;
+      opened = true;
+      marker.openPopup();
+    };
+
+    map.once("moveend", openOnce);
+    // Jaga-jaga: kalau moveend tidak pernah terpicu (mis. lokasi yang
+    // dipilih sama dengan posisi peta saat ini sehingga flyTo tidak
+    // benar-benar bergerak), tetap buka popup setelah durasi flyTo lewat.
+    const fallback = setTimeout(openOnce, 1300);
+
+    return () => {
+      map.off("moveend", openOnce);
+      clearTimeout(fallback);
+    };
+  }, [selectedLocation, map]);
 
   const markers = useMemo(
     () =>
@@ -72,19 +106,45 @@ export default function MarkerLayer({ locations }: MarkerLayerProps) {
         return (
           <Marker
             key={loc.id}
+            ref={(instance) => {
+              if (instance) markerRefs.current.set(loc.id, instance);
+              else markerRefs.current.delete(loc.id);
+            }}
             position={[loc.latitude, loc.longitude]}
             icon={icon}
             eventHandlers={{
-              click: () => flyToLocation(loc),
+              click: (e) => {
+                // Leaflet secara bawaan langsung membuka popup begitu marker
+                // diklik (sebelum flyTo mulai/selesai). Tutup dulu di sini
+                // supaya pembukaan popup sepenuhnya dikendalikan oleh efek
+                // di atas, yang menunggu peta selesai flyTo (event "moveend").
+                e.target.closePopup();
+                flyToLocation(loc);
+              },
             }}
           >
-            <Popup>
+            <Popup
+              ref={(instance) => {
+                if (instance) popupRefs.current.set(loc.id, instance);
+                else popupRefs.current.delete(loc.id);
+              }}
+              autoPanPaddingTopLeft={[24, 100]}
+              autoPanPaddingBottomRight={[24, 24]}
+            >
               <div className="w-full animate-fade-in">
                 {loc.image_url && (
                   <img
                     src={loc.image_url}
                     alt={`Foto ${loc.name}`}
-                    className="h-32 w-full object-cover"
+                    className="h-32 w-full object-cover bg-ink-100"
+                    // Ukuran popup dihitung Leaflet SEBELUM gambar selesai dimuat,
+                    // sehingga auto-pan memakai tinggi card yang masih kecil (tanpa gambar).
+                    // Setelah gambar termuat, card membesar ke atas dan bagian atasnya
+                    // (foto) jadi terpotong oleh tepi kontainer peta. Memanggil
+                    // popup.update() di sini memaksa Leaflet menghitung ulang layout
+                    // + auto-pan (adjustPan) dengan ukuran final yang benar.
+                    onLoad={() => popupRefs.current.get(loc.id)?.update()}
+                    onError={() => popupRefs.current.get(loc.id)?.update()}
                   />
                 )}
                 <div className="space-y-2 p-3">
